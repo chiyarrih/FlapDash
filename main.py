@@ -32,6 +32,7 @@ scroll_speed = 4
 flying = False
 game_over = False
 game_started = False
+crashing = False
 pipe_gap = 150
 pipe_frequency = 1500
 last_pipe = pygame.time.get_ticks() - pipe_frequency
@@ -87,13 +88,14 @@ def main_menu():
 
 # function to reset the game state
 def reset_game():
-        global score, pipe_frequency, scroll_speed
+        global score, pipe_frequency, scroll_speed, crashing
         pipe_group.empty()
         flappy .rect.x = 100
         flappy.rect.y = int(screen_height / 2)
         score = 0
         pipe_frequency = 1500
         scroll_speed = 4
+        crashing = False
         return score
 
 # class for the player character
@@ -146,9 +148,9 @@ class Ibon(pygame.sprite.Sprite):
 
 
     def update(self):
-        global flying  
+        global flying, crashing
 
-        if flying:  
+        if flying or crashing:  
             self.vel += 0.5
             if self.vel > 8:
                 self.vel = 8
@@ -297,10 +299,13 @@ while run:
 
 # background and game elements
     screen.blit(bg, (0, 0))
+    pipe_group.draw(screen)
     ibon_group.draw(screen)
     ibon_group.update()
-    pipe_group.draw(screen)
+    
+    # draw ground twice for seamless scrolling
     screen.blit(ground_img, (ground_scroll, 768))
+    screen.blit(ground_img, (ground_scroll + 855, 768))
 
 # to display scores and high score if the game has started
     if game_started:
@@ -330,12 +335,21 @@ while run:
 # handle collision and game over conditions
     died_sound = pygame.mixer.Sound('died_sound.mp3')
     died_sound.set_volume(0.5)
-    if pygame.sprite.groupcollide(ibon_group, pipe_group, False, False) or flappy.rect.top < 0 or flappy.rect.bottom >= 768:
+    if pygame.sprite.groupcollide(ibon_group, pipe_group, False, False) or flappy.rect.top < 0:
            game_over = True
            flying = False
-
-    # play died sound if it hasn't been played ye
-    if died_sound_played == False :
+           crashing = True
+           # play died sound if it hasn't been played yet
+           if died_sound_played == False:
+                died_sound.play()
+                died_sound_played = True
+    
+    # stop crashing when bird hits the ground
+    if flappy.rect.bottom >= 768:
+           crashing = False
+           game_over = True
+           flying = False
+           if died_sound_played == False:
                 died_sound.play()
                 died_sound_played = True
    
@@ -349,9 +363,10 @@ while run:
             top_pipe = Pipe(screen_width, int(screen_height / 2)+ pipe_height, 1)
             pipe_group.add(bottom_pipe)  
             pipe_group.add(top_pipe)
-            last_pipe = time_now    
-            ground_scroll -= scroll_speed
-            
+            last_pipe = time_now
+        
+        # scroll the ground
+        ground_scroll -= scroll_speed
         if abs(ground_scroll) > 35:
             ground_scroll = 0
             
