@@ -72,7 +72,10 @@ def show_game_title():
     black = (0, 0, 0) 
 
     # game title with an outline
-    draw_text_with_outline("FlapDash", font3, dark_red, black, float(screen_width / 3.2), int(screen_height / 4))
+    title_text = "FlapDash"
+    title_surface = font3.render(title_text, True, dark_red)
+    title_x = (screen_width - title_surface.get_width()) // 2
+    draw_text_with_outline(title_text, font3, dark_red, black, title_x, int(screen_height / 4))
 
 # function to draw text on the screen
 def draw_text(text, font, text_col, x, y):
